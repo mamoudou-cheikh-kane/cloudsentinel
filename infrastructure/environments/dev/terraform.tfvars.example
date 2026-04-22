@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and customize
+# terraform.tfvars is gitignored to prevent leaking env-specific values
+
+cluster_name       = "cloudsentinel-dev"
+kubernetes_version = "1.30.0"
+worker_count       = 2
