@@ -11,16 +11,16 @@ flowchart TB
     User[Developer/CI] -->|deploy| Orch[Orchestrator<br/>Python CLI]
     Orch -->|terraform apply| TF[Terraform]
     TF -->|provision| K8s[K8s Clusters<br/>kind/GKE/AKS/EKS]
-    
+
     Orch -->|run| Chaos[Chaos Engine<br/>Python]
     Chaos -->|gRPC| Agent[Go Agent<br/>DaemonSet]
     Agent -->|inject faults| K8s
     Agent -->|metrics| Redis[(Redis Streams)]
-    
+
     Redis -->|consume| API[FastAPI<br/>Backend]
     API -->|persist| TS[(TimescaleDB)]
     API -->|serve| Dash[React Dashboard]
-    
+
     TS -->|train| ML[ML Pipeline<br/>scikit-learn]
     ML -->|predict| API
 ```
