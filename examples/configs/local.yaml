@@ -1,0 +1,8 @@
+# CloudSentinel — Local development cluster
+
+name: cloudsentinel-dev
+provider: kind
+kubernetes_version: "1.30.0"
+worker_count: 2
+
+provider_options: {}

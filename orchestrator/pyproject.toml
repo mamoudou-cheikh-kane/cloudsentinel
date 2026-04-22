@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "cloudsentinel"
+version = "0.1.0"
+description = "Multi-cloud chaos engineering orchestrator"
+authors = ["Kane <mamoudoucheikhk@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "cloudsentinel"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+typer = "^0.15.0"
+pydantic = "^2.9.2"
+pyyaml = "^6.0.2"
+python-terraform = "^0.10.1"
+kubernetes = "^31.0.0"
+rich = "^13.9.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-cov = "^5.0.0"
+pytest-mock = "^3.14.0"
+ruff = "^0.8.0"
+mypy = "^1.13.0"
+
+[tool.poetry.scripts]
+cloudsentinel = "cloudsentinel.cli:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "--strict-markers",
+    "-ra",
+    "--cov=cloudsentinel",
+    "--cov-report=term-missing",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
