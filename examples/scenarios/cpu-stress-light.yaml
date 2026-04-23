@@ -1,0 +1,10 @@
+---
+name: cpu-stress-light
+description: Light CPU stress on all nodes for 30s (skeleton implementation)
+targets:
+  selector: all
+faults:
+  - type: cpu_stress
+    duration_seconds: 30
+    parameters:
+      intensity: "50"

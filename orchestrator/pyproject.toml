@@ -15,6 +15,8 @@ pyyaml = "^6.0.2"
 python-terraform = "^0.10.1"
 kubernetes = "^31.0.0"
 rich = "^13.9.2"
+grpcio = "^1.80.0"
+grpcio-tools = "^1.80.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
