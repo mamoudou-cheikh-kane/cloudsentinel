@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package cloudsentinel.agent.v1;
+
+option go_package = "github.com/mamoudou-cheikh-kane/cloudsentinel/agent/internal/pb;pb";
+
+// AgentService defines operations an orchestrator can invoke on an agent
+// to inject controlled faults into the local system.
+service AgentService {
+  // Health returns the current health of the agent.
+  rpc Health(HealthRequest) returns (HealthResponse);
+
+  // InjectFault starts a fault injection on the local node.
+  rpc InjectFault(InjectFaultRequest) returns (InjectFaultResponse);
+
+  // Rollback removes any active fault injection.
+  rpc Rollback(RollbackRequest) returns (RollbackResponse);
+
+  // GetStatus returns the current state of active fault injections.
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string node = 1;
+  string version = 2;
+  int64 uptime_seconds = 3;
+}
+
+enum FaultType {
+  FAULT_TYPE_UNSPECIFIED = 0;
+  FAULT_TYPE_CPU_STRESS = 1;
+  FAULT_TYPE_NETWORK_LATENCY = 2;
+  FAULT_TYPE_MEMORY_PRESSURE = 3;
+  FAULT_TYPE_DISK_FILL = 4;
+}
+
+message InjectFaultRequest {
+  FaultType type = 1;
+  int32 duration_seconds = 2;
+  map<string, string> parameters = 3;
+}
+
+message InjectFaultResponse {
+  string fault_id = 1;
+  bool accepted = 2;
+  string message = 3;
+}
+
+message RollbackRequest {
+  string fault_id = 1;
+}
+
+message RollbackResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message StatusRequest {}
+
+message ActiveFault {
+  string fault_id = 1;
+  FaultType type = 2;
+  int64 started_at_unix = 3;
+  int32 remaining_seconds = 4;
+}
+
+message StatusResponse {
+  repeated ActiveFault active_faults = 1;
+}

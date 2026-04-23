@@ -51,12 +51,31 @@ repos:
           - --hook-config=--retry-once-with-cleanup=true
 
   # === Go ===
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
+  # Hooks from dnephin/pre-commit-golang don't work well with Go modules
+  # located in subdirectories (our module lives at agent/, not at the root).
+  # Instead, we run go vet/test manually from agent/ or via CI.
+  # - repo: https://github.com/dnephin/pre-commit-golang
+  #   rev: v0.5.1
+  #   hooks:
+  #     - id: go-fmt
+  #     - id: go-vet
+  #     - id: go-mod-tidy
+
+  # Local Go hooks that operate correctly on the agent/ subdirectory.
+  - repo: local
     hooks:
-      - id: go-fmt
-      - id: go-vet
-      - id: go-mod-tidy
+      - id: go-fmt-agent
+        name: go fmt (agent)
+        entry: bash -c 'cd agent && gofmt -l -w . && test -z "$(gofmt -l .)"'
+        language: system
+        files: ^agent/.*\.go$
+        pass_filenames: false
+      - id: go-vet-agent
+        name: go vet (agent)
+        entry: bash -c 'cd agent && go vet ./...'
+        language: system
+        files: ^agent/.*\.go$
+        pass_filenames: false
 
   # === Commits conventionnels ===
   - repo: https://github.com/compilerla/conventional-pre-commit
