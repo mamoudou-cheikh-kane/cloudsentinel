@@ -1,0 +1,65 @@
+---
+name: Go CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "agent/**"
+      - ".github/workflows/go-ci.yml"
+  pull_request:
+    paths:
+      - "agent/**"
+      - ".github/workflows/go-ci.yml"
+
+jobs:
+  lint-test-build:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+          cache-dependency-path: agent/go.sum
+
+      - name: Verify gofmt
+        run: |
+          FILES=$(gofmt -l .)
+          if [ -n "$FILES" ]; then
+            echo "Files need formatting:"
+            echo "$FILES"
+            exit 1
+          fi
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run tests with coverage
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: agent/coverage.out
+
+      - name: Build agent binary
+        run: |
+          CGO_ENABLED=0 GOOS=linux go build \
+            -ldflags="-s -w" \
+            -o bin/agent \
+            ./cmd/agent
+
+      - name: Build Docker image
+        run: |
+          docker build -t cloudsentinel-agent:ci-${{ github.sha }} .
+          docker images cloudsentinel-agent:ci-${{ github.sha }}

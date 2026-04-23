@@ -1,0 +1,42 @@
+---
+name: Terraform CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infrastructure/**"
+      - ".github/workflows/terraform-ci.yml"
+  pull_request:
+    paths:
+      - "infrastructure/**"
+      - ".github/workflows/terraform-ci.yml"
+
+jobs:
+  validate:
+    name: Format & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Check Terraform fmt
+        run: terraform fmt -check -recursive infrastructure/
+
+      - name: Validate kind module
+        working-directory: infrastructure/modules/kind
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Validate dev environment
+        working-directory: infrastructure/environments/dev
+        run: |
+          terraform init -backend=false
+          terraform validate

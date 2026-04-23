@@ -1,0 +1,63 @@
+---
+name: Python CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "orchestrator/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    paths:
+      - "orchestrator/**"
+      - ".github/workflows/python-ci.yml"
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: orchestrator
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: orchestrator/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('orchestrator/poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      - name: Install project
+        run: poetry install --no-interaction
+
+      - name: Run ruff lint
+        run: poetry run ruff check cloudsentinel tests
+
+      - name: Run ruff format check
+        run: poetry run ruff format --check cloudsentinel tests
+
+      - name: Run pytest with coverage
+        run: poetry run pytest --cov=cloudsentinel --cov-report=term-missing
+
+      - name: Check version string
+        run: poetry run cloudsentinel version

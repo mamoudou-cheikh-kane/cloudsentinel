@@ -1,5 +1,10 @@
 # 🛡️ CloudSentinel
 
+[![Python CI](https://github.com/mamoudou-cheikh-kane/cloudsentinel/actions/workflows/python-ci.yml/badge.svg)](https://github.com/mamoudou-cheikh-kane/cloudsentinel/actions/workflows/python-ci.yml)
+[![Go CI](https://github.com/mamoudou-cheikh-kane/cloudsentinel/actions/workflows/go-ci.yml/badge.svg)](https://github.com/mamoudou-cheikh-kane/cloudsentinel/actions/workflows/go-ci.yml)
+[![Terraform CI](https://github.com/mamoudou-cheikh-kane/cloudsentinel/actions/workflows/terraform-ci.yml/badge.svg)](https://github.com/mamoudou-cheikh-kane/cloudsentinel/actions/workflows/terraform-ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 > Multi-cloud chaos engineering platform for validating distributed system resilience across Kubernetes clusters on AWS, GCP, Azure, and bare-metal environments.
 
 [![Status](https://img.shields.io/badge/status-in%20development-yellow)](https://github.com/mamoudou-cheikh-kane/cloudsentinel)
