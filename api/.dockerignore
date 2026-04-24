@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+.venv
+.pytest_cache
+.ruff_cache
+.mypy_cache
+tests
+Dockerfile
+.dockerignore
+README.md
+cloudsentinel.db
+*.db-journal
+.git

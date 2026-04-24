@@ -28,6 +28,7 @@ ignore = [
 "**/test_*.py" = ["S101", "S105", "S106"]
 "**/cli.py" = ["B008"]
 "**/providers/*.py" = ["S603", "S607"]
+"api/app/routers/*.py" = ["B008"]
 
 [tool.ruff.format]
 quote-style = "double"
