@@ -123,3 +123,10 @@ temp/
 .cache/
 *.bak
 api/cloudsentinel.db
+
+# Dashboard (Next.js)
+dashboard/node_modules/
+dashboard/.next/
+dashboard/.env.local
+dashboard/next-env.d.ts
+dashboard/out/
