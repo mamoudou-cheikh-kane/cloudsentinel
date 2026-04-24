@@ -43,30 +43,7 @@ Getting Started guide, Architecture overview, and ML Pipeline reference
 served locally with `mkdocs serve`.
 ## 🏗️ Architecture
 
-```text
-       ┌──────────────────────────────┐
-       │   USER (browser / CLI)       │
-       └──────────────┬───────────────┘
-                      │
-         ┌────────────┴────────────┐
-         ▼                         ▼
-  ┌────────────────┐     ┌────────────────┐
-  │   DASHBOARD    │     │  ORCHESTRATOR  │
-  │ (Next.js+SHCN) │     │   (Python CLI) │
-  └────────┬───────┘     └────────┬───────┘
-           │ REST                 │ gRPC
-           ▼                      ▼
-  ┌────────────────┐     ┌────────────────┐
-  │      API       │     │   AGENT (Go)   │
-  │   (FastAPI)    │     │  DaemonSet/K8s │
-  └────────────────┘     └────────┬───────┘
-                                  │ metrics
-                                  ▼
-                         ┌────────────────┐
-                         │   ML PIPELINE  │
-                         │ (scikit-learn) │
-                         └────────────────┘
-```
+![CloudSentinel Architecture](./docs/img/architecture.png)
 
 Full details in [`docs/architecture.md`](./docs/architecture.md).
 
