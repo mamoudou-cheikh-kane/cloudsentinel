@@ -26,7 +26,21 @@ CloudSentinel is an end-to-end platform that lets you:
 - 📊 **Collect** node-level metrics via a lightweight Go agent running as a DaemonSet
 - 🎛️ **Drive** scenarios from a REST API, a web dashboard, or the command line
 - 🤖 **Detect** anomalies in collected metrics with an Isolation Forest model
+## 📸 Screenshots
 
+### Dashboard (Next.js + shadcn/ui)
+
+![CloudSentinel Dashboard](./docs/img/dashboard.png)
+
+Live list of chaos scenarios with 5s polling, create form in a Dialog,
+and per-row Run button driving the FastAPI backend.
+
+### Documentation (MkDocs Material)
+
+![CloudSentinel Docs](./docs/img/docs.png)
+
+Getting Started guide, Architecture overview, and ML Pipeline reference
+served locally with `mkdocs serve`.
 ## 🏗️ Architecture
 
 ```text
