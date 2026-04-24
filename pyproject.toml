@@ -29,6 +29,7 @@ ignore = [
 "**/cli.py" = ["B008"]
 "**/providers/*.py" = ["S603", "S607"]
 "api/app/routers/*.py" = ["B008"]
+"ml-pipeline/cloudsentinel_ml/*.py" = ["N806"]
 
 [tool.ruff.format]
 quote-style = "double"

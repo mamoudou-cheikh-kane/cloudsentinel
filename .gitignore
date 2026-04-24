@@ -130,3 +130,11 @@ dashboard/.next/
 dashboard/.env.local
 dashboard/next-env.d.ts
 dashboard/out/
+
+# MkDocs build output
+site/
+
+# ML pipeline artifacts (datasets + models)
+ml-pipeline/src/features/*.csv
+ml-pipeline/src/models/*.joblib
+ml-pipeline/src/inference/*.csv
