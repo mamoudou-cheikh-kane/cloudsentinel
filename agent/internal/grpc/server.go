@@ -154,8 +154,9 @@ func buildFault(t pb.FaultType, duration time.Duration, params faults.Params) (f
 	switch t {
 	case pb.FaultType_FAULT_TYPE_CPU_STRESS:
 		return faults.NewCPUStress(duration, params)
-	case pb.FaultType_FAULT_TYPE_MEMORY_PRESSURE,
-		pb.FaultType_FAULT_TYPE_NETWORK_LATENCY,
+	case pb.FaultType_FAULT_TYPE_MEMORY_PRESSURE:
+		return faults.NewMemoryPressure(duration, params)
+	case pb.FaultType_FAULT_TYPE_NETWORK_LATENCY,
 		pb.FaultType_FAULT_TYPE_DISK_FILL:
 		return nil, errors.New("fault type not yet implemented")
 	default:
@@ -169,6 +170,8 @@ func pbTypeFromString(s string) pb.FaultType {
 	switch s {
 	case faults.TypeCPUStress:
 		return pb.FaultType_FAULT_TYPE_CPU_STRESS
+	case faults.TypeMemoryPressure:
+		return pb.FaultType_FAULT_TYPE_MEMORY_PRESSURE
 	default:
 		return pb.FaultType_FAULT_TYPE_UNSPECIFIED
 	}
