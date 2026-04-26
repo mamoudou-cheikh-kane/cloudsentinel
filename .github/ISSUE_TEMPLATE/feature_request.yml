@@ -1,0 +1,96 @@
+name: 💡 Feature Request
+description: Suggest a new feature or enhancement for CloudSentinel
+title: "[feature] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature!
+        For non-trivial features, please discuss the approach in this
+        issue before opening a PR.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem does this feature solve?
+      placeholder: |
+        I'm always frustrated when I try to inject a network latency
+        fault because there is no built-in support for it...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like
+      placeholder: |
+        Add a new fault type `network_latency` to the agent that uses
+        tc (traffic control) to add a configurable delay to outbound
+        packets...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any alternative solutions or workarounds?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Affected service(s)
+      description: Which CloudSentinel service(s) would this feature touch?
+      multiple: true
+      options:
+        - orchestrator (Python CLI)
+        - agent (Go DaemonSet)
+        - api (FastAPI backend)
+        - dashboard (Next.js frontend)
+        - ml-pipeline (scikit-learn)
+        - infrastructure (Terraform)
+        - docs (MkDocs)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority for you
+      description: How important is this feature to you?
+      options:
+        - Nice to have
+        - Would significantly improve my workflow
+        - Blocking my use case
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: |
+        Add any other context, screenshots, or references that might
+        help us understand the feature request.
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Are you willing to contribute?
+      options:
+        - label: I would like to work on implementing this feature
+        - label: I can help test the implementation
+        - label: I can help review the implementation
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I have read and agree to the Code of Conduct
+          required: true
+        - label: I have searched existing issues for duplicates
+          required: true
