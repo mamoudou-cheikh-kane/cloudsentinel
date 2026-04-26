@@ -3,40 +3,36 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"log/slog"
-	"sync"
 	"time"
 
-	"github.com/google/uuid"
-
+	"github.com/mamoudou-cheikh-kane/cloudsentinel/agent/internal/faults"
 	pb "github.com/mamoudou-cheikh-kane/cloudsentinel/agent/internal/pb"
 )
 
 // Server implements pb.AgentServiceServer.
+//
+// The server is intentionally thin: it only knows how to translate
+// protobuf requests into Fault objects and delegate execution to the
+// Registry. All the real work (busy loops, memory allocation, tc rules)
+// lives in the faults package.
 type Server struct {
 	pb.UnimplementedAgentServiceServer
 
-	nodeName     string
-	version      string
-	startedAt    time.Time
-	mu           sync.Mutex
-	activeFaults map[string]*activeFault
-}
-
-type activeFault struct {
-	id        string
-	faultType pb.FaultType
+	nodeName  string
+	version   string
 	startedAt time.Time
-	duration  time.Duration
+	registry  *faults.Registry
 }
 
 // NewServer creates a new gRPC Server for the agent.
 func NewServer(nodeName, version string) *Server {
 	return &Server{
-		nodeName:     nodeName,
-		version:      version,
-		startedAt:    time.Now(),
-		activeFaults: make(map[string]*activeFault),
+		nodeName:  nodeName,
+		version:   version,
+		startedAt: time.Now(),
+		registry:  faults.NewRegistry(),
 	}
 }
 
@@ -49,10 +45,10 @@ func (s *Server) Health(_ context.Context, _ *pb.HealthRequest) (*pb.HealthRespo
 	}, nil
 }
 
-// InjectFault records a new fault injection.
-// The actual fault execution is a TODO — this is a skeleton.
+// InjectFault constructs the right Fault implementation from the
+// request and registers it with the Registry, which actually runs it.
 func (s *Server) InjectFault(
-	_ context.Context,
+	ctx context.Context,
 	req *pb.InjectFaultRequest,
 ) (*pb.InjectFaultResponse, error) {
 	if req.Type == pb.FaultType_FAULT_TYPE_UNSPECIFIED {
@@ -61,48 +57,63 @@ func (s *Server) InjectFault(
 			Message:  "fault type must be specified",
 		}, nil
 	}
-
-	faultID := uuid.NewString()
-	s.mu.Lock()
-	s.activeFaults[faultID] = &activeFault{
-		id:        faultID,
-		faultType: req.Type,
-		startedAt: time.Now(),
-		duration:  time.Duration(req.DurationSeconds) * time.Second,
+	if req.DurationSeconds <= 0 {
+		return &pb.InjectFaultResponse{
+			Accepted: false,
+			Message:  "duration_seconds must be > 0",
+		}, nil
 	}
-	s.mu.Unlock()
+
+	duration := time.Duration(req.DurationSeconds) * time.Second
+	params := faults.Params{Raw: req.Parameters}
+
+	fault, err := buildFault(req.Type, duration, params)
+	if err != nil {
+		slog.Warn("InjectFault: bad request", "err", err)
+		return &pb.InjectFaultResponse{
+			Accepted: false,
+			Message:  err.Error(),
+		}, nil
+	}
+
+	if err := s.registry.Add(ctx, fault); err != nil {
+		slog.Error("InjectFault: registry.Add failed", "err", err)
+		return &pb.InjectFaultResponse{
+			Accepted: false,
+			Message:  "failed to start fault: " + err.Error(),
+		}, nil
+	}
 
 	slog.Info("fault injected",
-		"fault_id", faultID,
-		"type", req.Type.String(),
+		"fault_id", fault.ID(),
+		"type", fault.Type(),
 		"duration_seconds", req.DurationSeconds,
 	)
-
 	return &pb.InjectFaultResponse{
-		FaultId:  faultID,
+		FaultId:  fault.ID(),
 		Accepted: true,
-		Message:  "fault recorded (execution TODO)",
+		Message:  "fault started",
 	}, nil
 }
 
-// Rollback removes an active fault injection.
+// Rollback stops a running fault.
 func (s *Server) Rollback(
-	_ context.Context,
+	ctx context.Context,
 	req *pb.RollbackRequest,
 ) (*pb.RollbackResponse, error) {
-	s.mu.Lock()
-	_, ok := s.activeFaults[req.FaultId]
-	delete(s.activeFaults, req.FaultId)
-	s.mu.Unlock()
-
-	if !ok {
+	err := s.registry.Stop(ctx, req.FaultId)
+	if errors.Is(err, faults.ErrFaultNotFound) {
 		return &pb.RollbackResponse{
 			Success: false,
 			Message: "fault_id not found",
 		}, nil
 	}
-
-	slog.Info("fault rolled back", "fault_id", req.FaultId)
+	if err != nil {
+		return &pb.RollbackResponse{
+			Success: false,
+			Message: "failed to stop fault: " + err.Error(),
+		}, nil
+	}
 	return &pb.RollbackResponse{
 		Success: true,
 		Message: "fault rolled back",
@@ -114,22 +125,51 @@ func (s *Server) GetStatus(
 	_ context.Context,
 	_ *pb.StatusRequest,
 ) (*pb.StatusResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	faults := make([]*pb.ActiveFault, 0, len(s.activeFaults))
-	for _, f := range s.activeFaults {
-		remaining := int32(f.duration.Seconds() - time.Since(f.startedAt).Seconds())
+	active := s.registry.List()
+	out := make([]*pb.ActiveFault, 0, len(active))
+	for _, f := range active {
+		remaining := int32(f.Duration().Seconds() - time.Since(f.StartedAt()).Seconds())
 		if remaining < 0 {
 			remaining = 0
 		}
-		faults = append(faults, &pb.ActiveFault{
-			FaultId:          f.id,
-			Type:             f.faultType,
-			StartedAtUnix:    f.startedAt.Unix(),
+		out = append(out, &pb.ActiveFault{
+			FaultId:          f.ID(),
+			Type:             pbTypeFromString(f.Type()),
+			StartedAtUnix:    f.StartedAt().Unix(),
 			RemainingSeconds: remaining,
 		})
 	}
+	return &pb.StatusResponse{ActiveFaults: out}, nil
+}
 
-	return &pb.StatusResponse{ActiveFaults: faults}, nil
+// Shutdown gracefully stops all active faults. Call this when the
+// agent process is shutting down.
+func (s *Server) Shutdown(ctx context.Context) {
+	s.registry.StopAll(ctx)
+}
+
+// buildFault is the dispatcher: it picks the right Fault constructor
+// based on the protobuf FaultType. New fault types are added here.
+func buildFault(t pb.FaultType, duration time.Duration, params faults.Params) (faults.Fault, error) {
+	switch t {
+	case pb.FaultType_FAULT_TYPE_CPU_STRESS:
+		return faults.NewCPUStress(duration, params)
+	case pb.FaultType_FAULT_TYPE_MEMORY_PRESSURE,
+		pb.FaultType_FAULT_TYPE_NETWORK_LATENCY,
+		pb.FaultType_FAULT_TYPE_DISK_FILL:
+		return nil, errors.New("fault type not yet implemented")
+	default:
+		return nil, errors.New("unknown fault type")
+	}
+}
+
+// pbTypeFromString translates the stable Type() string back to the
+// protobuf enum value.
+func pbTypeFromString(s string) pb.FaultType {
+	switch s {
+	case faults.TypeCPUStress:
+		return pb.FaultType_FAULT_TYPE_CPU_STRESS
+	default:
+		return pb.FaultType_FAULT_TYPE_UNSPECIFIED
+	}
 }
