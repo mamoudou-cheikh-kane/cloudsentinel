@@ -57,7 +57,6 @@ func TestInjectFault_NotYetImplemented(t *testing.T) {
 	s := NewServer("n", "v")
 	tests := []pb.FaultType{
 		pb.FaultType_FAULT_TYPE_NETWORK_LATENCY,
-		pb.FaultType_FAULT_TYPE_DISK_FILL,
 	}
 	for _, ft := range tests {
 		t.Run(ft.String(), func(t *testing.T) {
