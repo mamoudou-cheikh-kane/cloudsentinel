@@ -155,10 +155,6 @@ mkdocs serve --dev-addr 127.0.0.1:8001
 - Official Helm Chart for production deployment
 - Kubernetes CRD `ChaosScenario` for GitOps workflows
 
-### ⏳ Niveau 5 — CNCF Sandbox submission
-- Multi-region coordination
-- KubeCon talk submission
-- /comparison page (vs Chaos Mesh, LitmusChaos, Gremlin)
 
 ## 📄 License
 
