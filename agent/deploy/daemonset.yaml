@@ -24,6 +24,10 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: cloudsentinel-agent
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
   template:
     metadata:
       labels:
@@ -35,14 +39,59 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: cloudsentinel-agent
-      hostNetwork: false
+
+      # hostNetwork lets the agent see the node's real network
+      # interfaces (eth0, etc.) so tc rules actually shape the
+      # node's traffic, not just the pod's virtual interface.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      # Give the agent up to 30s to drain on SIGTERM. The internal
+      # graceful shutdown stops every active fault (tc rules, disk
+      # filler files, memory buffers, CPU goroutines) before the
+      # gRPC server returns, so the kubelet must wait for that work
+      # to finish.
+      terminationGracePeriodSeconds: 30
+
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
+
+      volumes:
+        # emptyDir mounted at /tmp/cloudsentinel-faults so the disk
+        # fill fault can write filler files even though the root
+        # filesystem is read-only. emptyDir is wiped on pod restart,
+        # which gives us automatic cleanup of orphaned files.
+        - name: fault-scratch
+          emptyDir: {}
+
+      # Init container: clean up any tc qdisc that a previous agent
+      # crash might have left behind. Best-effort: errors are logged
+      # but never block the main container from starting.
+      initContainers:
+        - name: cleanup-orphans
+          image: registry.k8s.io/build-image/debian-iptables:bookworm-v1.0.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "removing any leftover tc qdisc on eth0 ..."
+              tc qdisc del dev eth0 root 2>/dev/null || true
+              echo "init cleanup done"
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+
       containers:
         - name: agent
-          image: cloudsentinel-agent:0.1.0
+          image: cloudsentinel-agent:0.2.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: metrics
@@ -75,6 +124,9 @@ spec:
               port: 9100
             initialDelaySeconds: 10
             periodSeconds: 10
+          volumeMounts:
+            - name: fault-scratch
+              mountPath: /tmp/cloudsentinel-faults
           securityContext:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
@@ -84,6 +136,13 @@ spec:
             capabilities:
               drop:
                 - ALL
+              # NET_ADMIN is required to invoke tc qdisc add/del.
+              # The fault code never escalates, never exec()s a shell,
+              # and the binary itself runs as user 65532, so this is
+              # the minimum capability set for the network fault to
+              # work.
+              add:
+                - NET_ADMIN
 ---
 apiVersion: v1
 kind: Service
