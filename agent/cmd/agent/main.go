@@ -81,7 +81,8 @@ func main() {
 		os.Exit(1)
 	}
 	grpcSrv := grpc.NewServer()
-	pb.RegisterAgentServiceServer(grpcSrv, csgrpc.NewServer(nodeName, agentVersion))
+	csServer := csgrpc.NewServer(nodeName, agentVersion)
+	pb.RegisterAgentServiceServer(grpcSrv, csServer)
 	reflection.Register(grpcSrv)
 
 	// ---------- Run both servers ----------
@@ -120,6 +121,13 @@ func main() {
 	// ---------- Graceful shutdown ----------
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
+
+	// Stop every active fault before stopping the gRPC server, so
+	// we get a chance to clean tc rules, remove filler files, and
+	// free the memory buffers. This is best-effort: we keep going
+	// even if a single fault fails to stop.
+	slog.Info("stopping active faults")
+	csServer.Shutdown(ctx)
 
 	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(ctx); err != nil {
