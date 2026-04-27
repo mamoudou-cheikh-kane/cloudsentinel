@@ -159,7 +159,7 @@ func buildFault(t pb.FaultType, duration time.Duration, params faults.Params) (f
 	case pb.FaultType_FAULT_TYPE_DISK_FILL:
 		return faults.NewDiskFill(duration, params)
 	case pb.FaultType_FAULT_TYPE_NETWORK_LATENCY:
-		return nil, errors.New("fault type not yet implemented")
+		return faults.NewNetworkLatency(duration, params)
 	default:
 		return nil, errors.New("unknown fault type")
 	}
@@ -175,6 +175,8 @@ func pbTypeFromString(s string) pb.FaultType {
 		return pb.FaultType_FAULT_TYPE_MEMORY_PRESSURE
 	case faults.TypeDiskFill:
 		return pb.FaultType_FAULT_TYPE_DISK_FILL
+	case faults.TypeNetworkLatency:
+		return pb.FaultType_FAULT_TYPE_NETWORK_LATENCY
 	default:
 		return pb.FaultType_FAULT_TYPE_UNSPECIFIED
 	}

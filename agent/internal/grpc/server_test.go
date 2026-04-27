@@ -53,24 +53,6 @@ func TestInjectFault_ZeroDuration(t *testing.T) {
 	}
 }
 
-func TestInjectFault_NotYetImplemented(t *testing.T) {
-	s := NewServer("n", "v")
-	tests := []pb.FaultType{
-		pb.FaultType_FAULT_TYPE_NETWORK_LATENCY,
-	}
-	for _, ft := range tests {
-		t.Run(ft.String(), func(t *testing.T) {
-			resp, _ := s.InjectFault(context.Background(), &pb.InjectFaultRequest{
-				Type:            ft,
-				DurationSeconds: 5,
-			})
-			if resp.Accepted {
-				t.Errorf("%s is not implemented yet, should be rejected", ft)
-			}
-		})
-	}
-}
-
 func TestInjectFault_CPUStress_Success(t *testing.T) {
 	s := NewServer("n", "v")
 	ctx := context.Background()
